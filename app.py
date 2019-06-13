@@ -65,7 +65,6 @@ def make_app():
 
 
 def start_server():
-    logger.info(f"Starting Tornado app on port {TORNADO_PORT}.")
     app = make_app()
     app.listen(TORNADO_PORT)
     tornado.ioloop.IOLoop.current().start()
