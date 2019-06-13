@@ -1,33 +1,65 @@
+from dotenv import load_dotenv
+
 import tornado.ioloop
+import tornado.options
 import tornado.web
 
 import json
+import logging
 import os
+import sys
 
-from dotenv import load_dotenv
+logger = logging.getLogger(__name__)
+
+tornado.options.define(
+    "access_to_stdout", default=False, help="Log tornado.access to stdout"
+)
+
 load_dotenv()
-
-from tornado.log import enable_pretty_logging, app_log
-enable_pretty_logging()
-
 
 TORNADO_PORT = int(os.getenv("TORNADO_PORT"))
 
 
 class MainHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
-        self.set_header('Content-Type', 'application/json')
+        self.set_header("Content-Type", "application/json")
 
     def get(self):
+        logger.debug("MainHandler.get")
+        logger.info("MainHandler.get")
+        logger.warning("MainHandler.get")
+        logger.error("MainHandler.get")
+
         self.write(json.dumps({"response": "Hello, world"}))
 
 
+def init_logging(access_to_stdout=False):
+    if access_to_stdout:
+        access_log = logging.getLogger("tornado.access")
+        access_log.propagate = False
+        # make sure access log is enabled even if error level is WARNING|ERROR
+        access_log.setLevel(logging.INFO)
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        access_log.addHandler(stdout_handler)
+
+
+def bootstrap():
+    tornado.options.parse_command_line(final=True)
+    init_logging(tornado.options.options.access_to_stdout)
+
+
 def make_app():
-    return tornado.web.Application([(r"/", MainHandler)])
+    urls = [(r"/", MainHandler)]
+    return tornado.web.Application(urls)
 
 
-if __name__ == "__main__":
-    app_log.info(f"Starting Tornado app on port {TORNADO_PORT}.")
+def start_server():
+    logger.info(f"Starting Tornado app on port {TORNADO_PORT}.")
     app = make_app()
     app.listen(TORNADO_PORT)
     tornado.ioloop.IOLoop.current().start()
+
+
+if __name__ == "__main__":
+    bootstrap()
+    start_server()
